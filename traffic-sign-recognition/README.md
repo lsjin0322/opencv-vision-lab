@@ -59,3 +59,145 @@
 ### 1단계 — 표지판 등록
 
 `표지판 등록` 버튼을 누르면 아래 두 이미지를 고정 경로에서 불러와 SIFT 분석을 수행합니다.
+
+각 이미지에 대해 아래 전처리 후 키포인트와 디스크립터를 추출합니다.
+
+```python
+gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+gray = cv.equalizeHist(gray)             # 히스토그램 평활화
+gray = cv.GaussianBlur(gray, (3, 3), 0)  # 가우시안 블러
+kp, des = sift.detectAndCompute(gray, None)
+```
+
+SIFT 파라미터는 다음과 같습니다.
+
+```python
+cv.SIFT_create(
+    nfeatures=5000,
+    nOctaveLayers=5,
+    contrastThreshold=0.02,
+    edgeThreshold=20,
+    sigma=1.4
+)
+```
+
+<br>
+
+### 2단계 — 도로 영상 불러오기
+
+파일 다이얼로그로 `.mov` 또는 `.mp4` 영상을 선택하면 첫 프레임을 미리보기로 표시합니다.
+
+<br>
+
+### 3단계 — 실시간 인식
+
+`인식` 버튼을 누르면 QTimer가 **30ms 간격**으로 프레임 처리를 호출합니다.
+매 호출마다 영상의 FPS를 기준으로 **5초치 프레임을 grab()으로 스킵**한 뒤 다음 프레임을 분석합니다.
+
+```python
+fps = self.roadCap.get(cv.CAP_PROP_FPS)  # fps가 0 이하이면 30으로 대체
+skip = int(fps * 5)
+for _ in range(skip - 1):
+    self.roadCap.grab()
+ret, frame = self.roadCap.read()
+```
+
+각 프레임에 동일한 전처리(equalizeHist + GaussianBlur) 후 SIFT 특징점을 추출하고 FLANN으로 매칭합니다.
+
+```python
+cv.FlannBasedMatcher(
+    dict(algorithm=1, trees=8),
+    dict(checks=200)
+)
+```
+
+매칭 필터링 및 검증은 아래 순서로 진행됩니다.
+
+<br>
+
+### 4단계 — 결과 시각화
+
+검출된 표지판마다 boundingRect 기준 사각형 박스와 레이블을 그립니다.
+
+- 초록 박스 `(0, 255, 0)` — SpeedLimit (단속구간)
+- 노랑 박스 `(0, 255, 255)` — SchoolZone (어린이보호구역)
+
+화면은 아래 구조로 구성됩니다.
+
+- 상단: 표지판 원본 이미지와 도로 크롭 간의 매칭선 시각화 (sign_h=300px 기준 리사이즈, pad=20px)
+- 중간: 구분선 (4px, gray=80)
+- 하단: 전체 도로 프레임 + 바운딩 박스
+
+인식 결과는 직전 결과(lastResult)와 달라졌을 때만 상단 infoLabel에 업데이트됩니다.
+두 표지판이 동시에 검출되면 `단속구간 / 어린이보호구역` 형태로 표시됩니다.
+
+<br>
+
+## 실행 방법
+
+### 1. 의존성 설치
+
+```bash
+pip install opencv-python opencv-contrib-python PyQt5 numpy
+```
+
+> SIFT는 `opencv-contrib-python`에 포함되어 있습니다. `opencv-python`만 설치하면 오류가 발생합니다.
+
+<br>
+
+### 2. 표지판 이미지 준비
+
+실행 파일과 같은 위치에 `ch6/` 폴더를 생성하고 아래 이미지를 넣어주세요.
+
+> 표지판 이미지 경로는 코드 내 `self.signFiles`에 하드코딩되어 있습니다. 변경 시 해당 리스트를 수정하세요.
+
+<br>
+
+### 3. 실행
+
+```bash
+python traffic_weak.py
+```
+
+<br>
+
+## 사용 순서
+
+| 순서 | 버튼 | 동작 |
+|:---:|:------|:------|
+| 1 | 표지판 등록 | ch6/ 폴더의 표지판 이미지를 SIFT로 분석하여 메모리에 등록 |
+| 2 | 도로 영상 불러오기 | .mov / .mp4 파일 선택, 첫 프레임 미리보기 표시 |
+| 3 | 인식 | QTimer 시작 (30ms), 5초 단위 프레임 분석 및 표지판 탐지 |
+| 4 | 나가기 | 프로그램 종료 |
+
+> 인식 버튼은 영상을 불러온 상태에서만 동작합니다. 영상이 끝나면 타이머가 자동 정지되고 "영상 재생 완료"가 표시됩니다.
+
+<br>
+
+## 프로젝트 구조
+<br>
+
+## 주요 파라미터
+
+| 파라미터 | 값 | 설명 |
+|:------|:---:|:------|
+| nfeatures | 5000 | SIFT 최대 검출 키포인트 수 |
+| nOctaveLayers | 5 | 옥타브당 레이어 수 |
+| contrastThreshold | 0.02 | 낮은 대비 키포인트 필터 임계값 |
+| edgeThreshold | 20 | 엣지 필터 임계값 |
+| sigma | 1.4 | 가우시안 시그마 |
+| trees | 8 | FLANN KD-tree 수 |
+| checks | 200 | FLANN 탐색 횟수 |
+| ratio threshold | 0.75 | Lowe's ratio test 임계값 |
+| min_good_matches | 6 | 최소 유효 매칭 수 |
+| RANSAC threshold | 3.0 px | 호모그래피 추정 오차 허용값 |
+| min_inliers | 5 | 최소 inlier 수 |
+| maxIters | 3000 | RANSAC 최대 반복 횟수 |
+| confidence | 0.995 | RANSAC 신뢰도 |
+| det 범위 | 0.005 ~ 200 | 호모그래피 행렬식 유효 범위 |
+| 면적 비율 | 0.05% ~ 60% | 탐지 박스의 프레임 대비 면적 범위 |
+| timer interval | 30 ms | QTimer 호출 간격 |
+| frame skip | fps x 5 | 매 호출마다 스킵할 프레임 수 |
+| sign_h | 300 px | 매칭 시각화 표지판 높이 기준 |
+| crop pad | 20 px | 크롭 영역 여백 |
+
