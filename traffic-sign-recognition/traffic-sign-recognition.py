@@ -37,7 +37,7 @@ class TrafficWeak(QMainWindow):
         self.roadCap = None
         self.signData = []
         self.recognizing = False
-        self.lastResult = None  # ✅ 마지막 인식 결과 저장
+        self.lastResult = None  # 마지막 인식 결과 저장
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.processFrame)
@@ -121,13 +121,13 @@ class TrafficWeak(QMainWindow):
 
         matcher = cv.FlannBasedMatcher(dict(algorithm=1, trees=8), dict(checks=200))
 
-        # ✅ 형광색으로 변경
-        box_colors = [(0, 255, 0), (0, 255, 255)]   # 형광 초록, 형광 노랑
+     
+        box_colors = [(0, 255, 0), (0, 255, 255)]   
         label_texts = ['SpeedLimit', 'SchoolZone']
         road_with_boxes = self.currentFrame.copy()
         results = []
         match_rows = []
-        found_boxes = []  # ✅ 박스 좌표 저장 (크롭용)
+        found_boxes = []  # 박스 좌표 저장
 
         for i, (sign_img, sign_kp, sign_des) in enumerate(self.signData):
             if sign_des is None or road_des is None:
@@ -160,7 +160,7 @@ class TrafficWeak(QMainWindow):
             if not (0.0005 * frame_area < box_area < 0.6 * frame_area):
                 continue
 
-            # ✅ 박스를 bounding rect 기준 정사각 네모로 깔끔하게 표시
+            # 박스를 bounding rect 기준 정사각 네모로 깔끔하게 표시
             pts = np.int32(box).reshape(-1, 2)
             x, y, bw, bh = cv.boundingRect(pts)
             cv.rectangle(road_with_boxes, (x, y), (x + bw, y + bh), box_colors[i], 3)
@@ -170,7 +170,7 @@ class TrafficWeak(QMainWindow):
             results.append(self.signFiles[i][1])
             found_boxes.append((i, sign_img, sign_kp, good_match, x, y, bw, bh))
 
-        # ✅ 매칭선 + 크롭 확대 구성
+        # 매칭선 + 크롭 확대 구성
         for (i, sign_img, sign_kp, good_match, x, y, bw, bh) in found_boxes:
             sign_h = 300
             scale = sign_h / sign_img.shape[0]
@@ -239,13 +239,13 @@ class TrafficWeak(QMainWindow):
             road_resized = cv.resize(road_with_boxes,
                                      (max_w, int(road_with_boxes.shape[0] * road_scale)))
 
-            # ✅ 구분선 추가
+            # 구분선 추가
             divider = np.full((4, max_w, 3), 80, dtype=np.uint8)
             final = np.vstack([match_combined, divider, road_resized])
 
             self.showOnLabel(final, self.rightLabel)
 
-            # ✅ 결과는 한 번만, 두 표지판 모두 표시
+            
             result_text = ' / '.join(results)
             if result_text != self.lastResult:
                 self.lastResult = result_text
