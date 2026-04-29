@@ -72,7 +72,7 @@ class TrafficWeak(QMainWindow):
             if ret:
                 self.currentFrame = frame
                 self.showOnLabel(frame, self.rightLabel)
-            self.infoLabel.setText('영상 불러오기 완료 - 인식 시작 버튼을 누르세요')
+            self.infoLabel.setText('영상 불러오기 완료 - 인식 버튼을 누르세요')
 
     def processFrame(self):
         if self.roadCap is None:
