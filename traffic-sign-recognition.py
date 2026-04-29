@@ -13,7 +13,7 @@ class TrafficWeak(QMainWindow):
 
         self.signButton = QPushButton('표지판 등록', self)
         self.roadButton = QPushButton('도로 영상 불러오기', self)
-        self.recognitionButton = QPushButton('인식 시작', self)
+        self.recognitionButton = QPushButton('인식', self)
         self.quitButton = QPushButton('나가기', self)
 
         self.infoLabel = QLabel('환영합니다!', self)
