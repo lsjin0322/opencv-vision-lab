@@ -10,7 +10,7 @@ It focuses on resizing and rotation transformations to understand how image geom
 ---
 
 ## Input Image
-여기가 사진 넣는곳이야  
+ 
 ![Input Image](rose.png)
 
 ---
@@ -32,7 +32,7 @@ The resized image is rotated using an affine transformation matrix.
 
 Affine 변환 행렬을 이용하여 이미지를 회전합니다.
  
-![Rotated Image](result_2_rotated.jpg)
+![Rotated Image](result_3_combined.jpg)
 
 ---
 
@@ -42,7 +42,7 @@ The processed results are used to compare how image structure changes through ge
 기하학적 변환을 통해 이미지 구조가 어떻게 변화하는지 비교합니다.
 
  
-![Final Result](result_3_combined.jpg)
+![Final Result](result_2_rotated.jpg)
 
 ---
 
